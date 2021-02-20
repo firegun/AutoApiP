@@ -10,13 +10,9 @@ if app_num == '':
     app_num='1'
 gh_token=os.getenv('GH_TOKEN')
 gh_repo=os.getenv('GH_REPO')
-#ms_token=os.getenv('MS_TOKEN')
-#client_id=os.getenv('CLIENT_ID')
-#client_secret=os.getenv('CLIENT_SECRET')
 Auth=r'token '+gh_token
 geturl=r'https://api.github.com/repos/'+gh_repo+r'/actions/secrets/public-key'
-#puturl=r'https://api.github.com/repos/'+gh_repo+r'/actions/secrets/MS_TOKEN'
-key_id='wangziyingwen'
+key_id='whoami'
 
 #公钥获取
 def getpublickey(Auth,geturl):
@@ -37,12 +33,12 @@ def getmstoken(ms_token,appnum):
     headers={'Content-Type':'application/x-www-form-urlencoded'
             }
     data={'grant_type': 'refresh_token',
-          'refresh_token': ms_token,
-          'client_id':client_id,
-          'client_secret':client_secret,
-          'redirect_uri':'http://localhost:53682/'
-         }
-    html = req.post('https://login.microsoftonline.com/common/oauth2/v2.0/token',data=data,headers=headers)
+        'refresh_token': ms_token,
+        'client_id': client_id,
+        'client_secret': client_secret,
+        'redirect_uri': redirect_uri
+        }
+    html = req.post(r'https://login.microsoftonline.com/' + str(tenant_id) + r'/oauth2/v2.0/token',data=data,headers=headers)
     jsontxt = json.loads(html.text)
     if 'refresh_token' in jsontxt:
         print(r'账号/应用 '+str(appnum)+' 的微软密钥获取成功')
@@ -75,14 +71,18 @@ def setsecret(encrypted_value,key_id,puturl,appnum):
 #调用 
 for a in range(1, int(app_num)+1):
     if a==1:
+        tenant_id=os.getenv('TENANT_ID')
         client_id=os.getenv('CLIENT_ID')
+        redirect_uri=os.getenv('REDIRECT_URI')
         client_secret=os.getenv('CLIENT_SECRET')
         ms_token=os.getenv('MS_TOKEN')
         puturl=r'https://api.github.com/repos/'+gh_repo+r'/actions/secrets/MS_TOKEN'
         encrypted_value=createsecret(getpublickey(Auth,geturl),getmstoken(ms_token,a))
         setsecret(encrypted_value,key_id,puturl,a)
     else:
+        tenant_id=os.getenv('TENANT_ID_'+str(a))
         client_id=os.getenv('CLIENT_ID_'+str(a))
+        redirect_uri=os.getenv('REDIRECT_URI_'+str(a))
         client_secret=os.getenv('CLIENT_SECRET_'+str(a))
         ms_token=os.getenv('MS_TOKEN_'+str(a))
         puturl=r'https://api.github.com/repos/'+gh_repo+r'/actions/secrets/MS_TOKEN_'+str(a)

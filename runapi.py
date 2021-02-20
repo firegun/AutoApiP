@@ -6,7 +6,7 @@ import json,sys,time,random
 app_num=os.getenv('APP_NUM')
 if app_num == '':
     app_num = '1'
-access_token_list=['wangziyingwen']*int(app_num)
+access_token_list=['default']*int(app_num)
 #配置选项，自由选择
 config_list = {'每次轮数':3,
             '是否启动随机时间':'N','延时范围起始':600,'结束':1200,
@@ -51,15 +51,16 @@ def getmstoken(ms_token,appnum):
             }
     data={'grant_type': 'refresh_token',
         'refresh_token': ms_token,
-        'client_id':client_id,
-        'client_secret':client_secret,
-        'redirect_uri':'http://localhost:53682/'
+        'client_id': client_id,
+        'client_secret': client_secret,
+        'redirect_uri': redirect_uri
         }
-    html = req.post('https://login.microsoftonline.com/common/oauth2/v2.0/token',data=data,headers=headers)
+    html = req.post(r'https://login.microsoftonline.com/' + str(tenant_id) + r'/oauth2/v2.0/token',data=data,headers=headers)
     jsontxt = json.loads(html.text)
     if 'refresh_token' in jsontxt:
         print(r'账号/应用 '+str(appnum)+' 的微软密钥获取成功')
     else:
+        print(str(html.text))
         print(r'账号/应用 '+str(appnum)+' 的微软密钥获取失败'+'\n'+'请检查secret里 CLIENT_ID , CLIENT_SECRET , MS_TOKEN 格式与内容是否正确，然后重新设置')
     refresh_token = jsontxt['refresh_token']
     access_token = jsontxt['access_token']
@@ -73,12 +74,16 @@ def runapi(apilist,a):
             'Authorization':access_token,
             'Content-Type':'application/json'
             }
-    for a in range(len(apilist)):	
+    for b in range(len(apilist)):
         try:
-            if req.get(api_list[apilist[a]],headers=headers).status_code == 200:
-                print('第'+str(apilist[a])+"号api调用成功")
+            apiResult = req.get(api_list[b],headers=headers);
+            if apiResult.status_code == 200:
+                print('第'+str(apilist[b])+"号api调用成功")
                 if config_list['是否开启各api延时'] != 'N':
                     time.sleep(random.randint(config_list['api延时范围开始'],config_list['api延时结束']))
+            else:
+                print('第'+str(apilist[b])+"号api调用失败")
+                print(apiResult.text)
         except:
             print("pass")
             pass
@@ -86,12 +91,16 @@ def runapi(apilist,a):
 #一次性获取access_token，降低获取率
 for a in range(1, int(app_num)+1):
     if a == 1: 
+        tenant_id=os.getenv('TENANT_ID')
         client_id=os.getenv('CLIENT_ID')
+        redirect_uri=os.getenv('REDIRECT_URI')
         client_secret=os.getenv('CLIENT_SECRET')
         ms_token=os.getenv('MS_TOKEN')
         access_token_list[a-1]=getmstoken(ms_token,a)
     else:
+        tenant_id=os.getenv('TENANT_ID_'+str(a))
         client_id=os.getenv('CLIENT_ID_'+str(a))
+        redirect_uri=os.getenv('REDIRECT_URI_'+str(a))
         client_secret=os.getenv('CLIENT_SECRET_'+str(a))
         ms_token=os.getenv('MS_TOKEN_'+str(a))
         access_token_list[a-1]=getmstoken(ms_token,a)
@@ -117,7 +126,9 @@ for c in range(1,config_list['每次轮数']+1):
         if config_list['是否开启各账号延时'] == 'Y':
             time.sleep(random.randint(config_list['账号延时范围开始'],config_list['账号延时结束']))
         if a==1:
+            tenant_id=os.getenv('TENANT_ID')
             client_id=os.getenv('CLIENT_ID')
+            redirect_uri=os.getenv('REDIRECT_URI')
             client_secret=os.getenv('CLIENT_SECRET')
             print('\n'+'应用/账号 '+str(a)+' 的第'+str(c)+'轮 '+time.asctime(time.localtime(time.time()))+'\n')
             if config_list['是否开启随机api顺序'] == 'Y':
@@ -129,7 +140,9 @@ for c in range(1,config_list['每次轮数']+1):
                 apilist=[5,9,8,1,20,24,23,6,21,22]
                 runapi(apilista,a)
         else:
+            tenant_id=os.getenv('TENANT_ID_'+str(a))
             client_id=os.getenv('CLIENT_ID_'+str(a))
+            redirect_uri=os.getenv('REDIRECT_URI_'+str(a))
             client_secret=os.getenv('CLIENT_SECRET_'+str(a))
             print('\n'+'应用/账号 '+str(a)+' 的第'+str(c)+'轮 '+time.asctime(time.localtime(time.time()))+'\n')
             if config_list['是否开启随机api顺序'] == 'Y':
